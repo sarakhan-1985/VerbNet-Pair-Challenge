@@ -4,7 +4,6 @@ import streamlit as st
 from questions import QUESTIONS
 
 DB = Path(os.getenv('VERBNET_DB_PATH', str(Path(__file__).with_name('challenge.sqlite3'))))
-ADMIN_PASSWORD = os.getenv('VERBNET_ADMIN_PASSWORD', 'change-me')
 TEAM_COUNT = 6
 
 st.set_page_config(page_title='VerbNet Pair Challenge', page_icon='🏆', layout='wide')
@@ -38,15 +37,9 @@ def results(c, rid):
 
 st.title('🏆 VerbNet Pair Challenge')
 st.caption('Six teams · 20 introductory semantic-role questions · Results revealed only by instructor')
-if ADMIN_PASSWORD == 'change-me':
-    st.warning('Demo password is active. Set VERBNET_ADMIN_PASSWORD before using this on a public server.')
 role = st.sidebar.radio('Access', ['Team','Instructor'])
 
 if role == 'Instructor':
-    pwd = st.sidebar.text_input('Instructor password',type='password')
-    if pwd != ADMIN_PASSWORD:
-        st.info('Enter the instructor password to manage the competition.')
-        st.stop()
     with connect() as c:
         rnd = active_round(c)
         if not rnd or rnd['status']=='revealed':
@@ -99,22 +92,18 @@ else:
             with st.form('join'):
                 code=st.text_input('Session code').strip().upper()
                 name=st.text_input('Team name (e.g., Team A)').strip()
-                pin=st.text_input('Team PIN (choose a private PIN)',type='password')
                 go=st.form_submit_button('Join or resume')
             if go:
                 if code != rnd['code']:
                     st.error('Incorrect session code.')
-                elif not name or len(name)>40 or len(pin)<4:
-                    st.error('Enter a team name (up to 40 characters) and a PIN of at least 4 characters.')
+                elif not name or len(name)>40:
+                    st.error('Enter a team name (up to 40 characters).')
                 else:
                     existing=c.execute('SELECT * FROM teams WHERE round_id=? AND name=?',(rnd['id'],name)).fetchone()
                     if existing:
-                        if secrets.compare_digest(existing['pin'],pin):
-                            st.session_state.team_id=existing['id']
-                            st.session_state.round_id=rnd['id']
-                            st.rerun()
-                        else:
-                            st.error('Wrong team PIN.')
+                        st.session_state.team_id=existing['id']
+                        st.session_state.round_id=rnd['id']
+                        st.rerun()
                     elif rnd['status']!='open':
                         st.error('Round is closed.')
                     else:
@@ -125,14 +114,14 @@ else:
                                 c.execute('ROLLBACK')
                                 st.error('All six team slots are taken.')
                             else:
-                                cur=c.execute('INSERT INTO teams(round_id,name,pin) VALUES (?,?,?)',(rnd['id'],name,pin))
+                                cur=c.execute('INSERT INTO teams(round_id,name,pin) VALUES (?,?,?)',(rnd['id'],name,''))
                                 c.execute('COMMIT')
                                 st.session_state.team_id=cur.lastrowid
                                 st.session_state.round_id=rnd['id']
                                 st.rerun()
                         except sqlite3.IntegrityError:
                             c.execute('ROLLBACK')
-                            st.error('Team name already exists; please join with its PIN.')
+                            st.error('Team name already exists; choose your team name to resume.')
             st.stop()
         team=c.execute('SELECT * FROM teams WHERE id=? AND round_id=?',(st.session_state.team_id,rnd['id'])).fetchone()
         if not team:
