@@ -1,0 +1,23 @@
+# Curated introductory thematic-role exercises; not automatic VerbNet tagging.
+QUESTIONS = [
+("Sara opened the door with a key.","What is the role of 'Sara'?",["Agent","Theme","Instrument","Experiencer"],0,"Sara intentionally performs the opening action."),
+("Sara opened the door with a key.","What is the role of 'a key'?",["Agent","Instrument","Recipient","Location"],1,"The key is the tool used to open the door."),
+("Ali gave Mary a book.","What is the role of 'Mary'?",["Recipient","Agent","Source","Instrument"],0,"Mary receives the book."),
+("Ali gave Mary a book.","What is the role of 'a book'?",["Theme","Agent","Experiencer","Location"],0,"The book is the entity transferred."),
+("The child broke the glass.","What is the role of 'the glass'?",["Agent","Patient","Recipient","Source"],1,"The glass undergoes a change of state."),
+("Fatima felt afraid.","What is the role of 'Fatima'?",["Experiencer","Instrument","Destination","Theme"],0,"Fatima experiences an emotion."),
+("The students walked to the library.","What is the role of 'the library'?",["Destination","Source","Agent","Instrument"],0,"The library is the endpoint of the movement."),
+("The students walked from the classroom.","What is the role of 'the classroom'?",["Destination","Source","Recipient","Patient"],1,"The classroom is the starting point of the movement."),
+("The chef cut the bread with a knife.","What is the role of 'a knife'?",["Theme","Instrument","Experiencer","Recipient"],1,"The knife is used to carry out the cutting."),
+("Ayesha sent a letter to Bilal.","What is the role of 'Bilal'?",["Recipient","Agent","Source","Location"],0,"Bilal receives the letter."),
+("The ball rolled into the garden.","What is the role of 'the ball'?",["Theme","Agent","Experiencer","Instrument"],0,"The ball is the entity that moves; no intentional actor is specified."),
+("Hina heard the alarm.","What is the role of 'Hina'?",["Experiencer","Patient","Instrument","Destination"],0,"Hina perceives the sound."),
+("The teacher put the book on the table.","What is the role of 'the table'?",["Destination","Agent","Recipient","Instrument"],0,"The table is the endpoint of the book's placement."),
+("The boy pushed the trolley.","What is the role of 'the boy'?",["Agent","Theme","Source","Patient"],0,"The boy causes the trolley to move."),
+("The storm damaged the roof.","What is the role of 'the roof'?",["Patient","Agent","Instrument","Recipient"],0,"The roof is affected by the damaging event."),
+("The parcel arrived at the office.","What is the role of 'the office'?",["Destination","Source","Experiencer","Agent"],0,"The office is the endpoint of the parcel's motion."),
+("Nadia carried the bag.","What is the role of 'the bag'?",["Theme","Agent","Instrument","Experiencer"],0,"The bag is the entity moved or carried."),
+("Usman showed the picture to Sana.","What is the role of 'Sana'?",["Recipient","Source","Agent","Patient"],0,"Sana is the recipient of the showing event."),
+("The children played in the park.","What is the role of 'the park'?",["Location","Instrument","Patient","Experiencer"],0,"The park identifies where the event occurs."),
+("Mariam placed the cup beside the plate.","What is the role of 'Mariam'?",["Agent","Theme","Destination","Recipient"],0,"Mariam intentionally performs the placement."),
+]
