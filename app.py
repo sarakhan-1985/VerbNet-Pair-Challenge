@@ -5,6 +5,14 @@ from questions import QUESTIONS
 
 DB = Path(os.getenv('VERBNET_DB_PATH', str(Path(__file__).with_name('challenge.sqlite3'))))
 TEAM_COUNT = 6
+QUESTIONS_PER_TEAM = 20
+
+def team_questions(team_id):
+    """Stable, different 20-question sets for successive team slots."""
+    start = ((team_id - 1) % TEAM_COUNT) * 7
+    indices = [(start + i) % len(QUESTIONS) for i in range(QUESTIONS_PER_TEAM)]
+    return [(i, QUESTIONS[i]) for i in indices]
+
 
 st.set_page_config(page_title='VerbNet Pair Challenge', page_icon='🏆', layout='wide')
 
@@ -30,13 +38,13 @@ def progress(c, rid):
 
 def score(c, tid):
     ans = {r['q_index']: r['answer'] for r in c.execute('SELECT q_index,answer FROM answers WHERE team_id=?',(tid,))}
-    return sum(ans.get(i)==q[3] for i,q in enumerate(QUESTIONS))
+    return sum(ans.get(i)==q[3] for i,q in team_questions(tid))
 
 def results(c, rid):
     return sorted([(t['name'], score(c,t['id']),t['submitted_at'] is not None) for t in progress(c,rid)], key=lambda x:(-x[1],x[0].lower()))
 
 st.title('🏆 VerbNet Pair Challenge')
-st.caption('Six teams · 20 introductory semantic-role questions · Results revealed only by instructor')
+st.caption('Six teams · 20 different questions per pair · Results revealed only by instructor')
 role = st.sidebar.radio('Access', ['Team','Instructor'])
 
 if role == 'Instructor':
@@ -74,11 +82,12 @@ if role == 'Instructor':
                 st.dataframe([{'Rank':1+sum(x[1]>s for x in leaderboard),'Team':n,'Score / 20':s,'Submitted':done} for n,s,done in leaderboard],hide_index=True,use_container_width=True)
                 st.download_button('Download scores (CSV)',data='Team,Score,Submitted\n'+''.join(f'{n},{s},{done}\n' for n,s,done in leaderboard),file_name='verbnet_scores.csv',mime='text/csv')
                 st.subheader('Projector answer review')
-                selected=st.selectbox('Question',list(range(len(QUESTIONS))),format_func=lambda x:f'Question {x+1}')
-                sentence,prompt,opts,correct,explanation=QUESTIONS[selected]
+                review_team=st.selectbox('Review team',teams,format_func=lambda t:t['name']) if teams else None
+                selected=st.selectbox('Question',list(range(QUESTIONS_PER_TEAM)),format_func=lambda x:f'Question {x+1}') if review_team else None
+                sentence,prompt,opts,correct,explanation=team_questions(review_team['id'])[selected][1] if review_team else ("","",[],0,"")
                 st.write('**Sentence:**',sentence)
                 st.write('**Question:**',prompt)
-                st.success(f'Correct answer: {opts[correct]}')
+                st.success(f'Correct answer: {opts[correct]}') if opts else None
                 st.write(explanation)
     if st.button('Refresh dashboard'):
         st.rerun()
@@ -133,8 +142,8 @@ else:
             st.subheader('Final leaderboard')
             st.dataframe([{'Rank':1+sum(x[1]>s for x in board),'Team':n,'Score / 20':s} for n,s,_ in board],hide_index=True,use_container_width=True)
             ans={r['q_index']:r['answer'] for r in c.execute('SELECT q_index,answer FROM answers WHERE team_id=?',(team['id'],))}
-            for i,(sentence,prompt,opts,correct,explanation) in enumerate(QUESTIONS):
-                with st.expander(f'Question {i+1}: {prompt}'):
+            for position,(i,(sentence,prompt,opts,correct,explanation)) in enumerate(team_questions(team['id']), 1):
+                with st.expander(f'Question {position}: {prompt}'):
                     st.write(sentence)
                     st.write('Your answer:',opts[ans[i]] if i in ans else 'Not answered')
                     st.write('Correct answer:',opts[correct])
@@ -151,9 +160,9 @@ else:
         st.info('Discuss answers with your partner. No scores or explanations appear before instructor reveal.')
         with st.form('quiz'):
             responses=[]
-            for i,(sentence,prompt,opts,correct,explanation) in enumerate(QUESTIONS):
-                st.markdown(f'**Q{i+1}. {sentence}**')
-                responses.append(st.radio(prompt,['Select an answer']+opts,key=f'question_{rnd["id"]}_{i}',index=0))
+            for position,(i,(sentence,prompt,opts,correct,explanation)) in enumerate(team_questions(team['id']), 1):
+                st.markdown(f'**Q{position}. {sentence}**')
+                responses.append(st.radio(prompt,['Select an answer']+opts,key=f'question_{rnd["id"]}_{team["id"]}_{i}',index=0))
             submit=st.form_submit_button('Submit final answers')
         if submit:
             if any(a=='Select an answer' for a in responses):
@@ -166,8 +175,8 @@ else:
                     c.execute('ROLLBACK')
                     st.error('Submission is already recorded or the round has closed.')
                 else:
-                    for i,(_,_,opts,_,_) in enumerate(QUESTIONS):
-                        c.execute('INSERT INTO answers(team_id,q_index,answer) VALUES (?,?,?)',(team['id'],i,opts.index(responses[i])))
+                    for position,(i,(_,_,opts,_,_)) in enumerate(team_questions(team['id'])):
+                        c.execute('INSERT INTO answers(team_id,q_index,answer) VALUES (?,?,?)',(team['id'],i,opts.index(responses[position])))
                     c.execute('UPDATE teams SET submitted_at=? WHERE id=?',(int(time.time()),team['id']))
                     c.execute('COMMIT')
                     st.rerun()
